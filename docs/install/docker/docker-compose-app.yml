@@ -1,0 +1,108 @@
+version: "3.8"
+
+services:
+  luohuo-gateway:
+    image: hula/luohuo-gateway:latest
+    container_name: luohuo-gateway
+    build:
+      context: ../../../luohuo-cloud/luohuo-gateway/luohuo-gateway-server
+      dockerfile: ../../../docs/install/docker/Dockerfile
+    ports:
+      - "8888:8888" # 网关端口，客户端连接入口
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx512m
+      - NACOS_HOST=nacos
+      - NACOS_PORT=8848
+      - NACOS_NAMESPACE=public
+    networks:
+      - hula_net
+    depends_on:
+      - nacos
+      - redis
+
+  luohuo-auth:
+    image: hula/luohuo-auth:latest
+    container_name: luohuo-auth
+    build:
+      context: ../../../luohuo-cloud/luohuo-oauth/luohuo-oauth-server
+      dockerfile: ../../../docs/install/docker/Dockerfile
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx512m
+      - NACOS_HOST=nacos
+      - NACOS_PORT=8848
+    networks:
+      - hula_net
+    depends_on:
+      - nacos
+      - redis
+
+  luohuo-system:
+    image: hula/luohuo-system:latest
+    container_name: luohuo-system
+    build:
+      context: ../../../luohuo-cloud/luohuo-system/luohuo-system-server
+      dockerfile: ../../../docs/install/docker/Dockerfile
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx512m
+      - NACOS_HOST=nacos
+      - NACOS_PORT=8848
+    networks:
+      - hula_net
+    depends_on:
+      - nacos
+      - mysql
+
+  luohuo-im:
+    image: hula/luohuo-im:latest
+    container_name: luohuo-im
+    build:
+      context: ../../../luohuo-cloud/luohuo-im/luohuo-im-server
+      dockerfile: ../../../docs/install/docker/Dockerfile
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx1g
+      - NACOS_HOST=nacos
+      - NACOS_PORT=8848
+    networks:
+      - hula_net
+    depends_on:
+      - nacos
+      - rocketmq-start
+
+  luohuo-ws:
+    image: hula/luohuo-ws:latest
+    container_name: luohuo-ws
+    build:
+      context: ../../../luohuo-cloud/luohuo-ws/luohuo-ws-server
+      dockerfile: ../../../docs/install/docker/Dockerfile
+    ports:
+      - "18888:18888" # WebSocket 端口
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx1g
+      - NACOS_HOST=nacos
+      - NACOS_PORT=8848
+    networks:
+      - hula_net
+    depends_on:
+      - nacos
+      - luohuo-im
+
+  luohuo-ai:
+    image: hula/luohuo-ai:latest
+    container_name: luohuo-ai
+    build:
+      context: ../../../luohuo-cloud/luohuo-ai/luohuo-ai-server
+      dockerfile: ../../../docs/install/docker/Dockerfile
+    environment:
+      - JAVA_OPTS=-Xms512m -Xmx1g
+      - NACOS_HOST=nacos
+      - NACOS_PORT=8848
+    networks:
+      - hula_net
+    depends_on:
+      - nacos
+
+# 定义网络，需确保与 middleware 的 docker-compose 处于同一网络
+networks:
+  hula_net:
+    external: true
+    name: hula_server_default # 根据实际 middleware 生成的网络名调整，通常是 目录名_default
